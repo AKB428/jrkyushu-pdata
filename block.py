@@ -6,18 +6,25 @@ def reorganize_csv(file_path):
     data = []
 
     # ファイルを読み込み
-    with open(file_path, 'r', encoding='utf-8-sig') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         lines = list(reader)
 
     # ヘッダー行を取得
     header = lines[0][:4]  # A~D列のヘッダーのみを保持
+
+    # 特定の空白文字を削除する関数
+    def remove_whitespace(s):
+        return ''.join(c for c in s if not c.isspace())
     
     # 指定された範囲をメモリに格納
     def add_data(start, end, cols):
         for i in range(start, end):
             if i < len(lines):
                 row = [lines[i][j] for j in cols if j < len(lines[i])]
+                # B列とC列のすべてのスペース（全ての空白文字）を削除
+                row[1] = remove_whitespace(row[1])  # 駅名のすべての空白文字を削除
+                row[2] = remove_whitespace(row[2])  # 線名のすべての空白文字を削除
                 data.append(row[:4])  # A~D列のみを保持
 
     # A~D, F~I, K~N列のデータを指定の範囲で読み込む
@@ -40,7 +47,7 @@ def reorganize_csv(file_path):
     new_csv_path = os.path.join(output_folder, "reorganized_" + os.path.basename(file_path))
 
     # メモリに格納したデータを新しいCSVに出力
-    with open(new_csv_path, 'w', encoding='utf-8-sig', newline='') as file:
+    with open(new_csv_path, 'w', encoding='utf-8', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(header)
         writer.writerows(data)
