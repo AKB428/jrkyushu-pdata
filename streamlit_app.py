@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-import matplotlib.pyplot as plt
+import plotly.express as px
 
 # SQLiteデータベースに接続
 conn = sqlite3.connect('train_data.db')
@@ -34,6 +34,7 @@ if st.button("決定"):
             ORDER BY year_{selected_year} DESC
         '''
         df = pd.read_sql_query(query, conn)
+        column_to_plot = "乗客人数"
     elif selected_tab == "増減人数":
         previous_year = str(int(selected_year) - 1)
         query = f'''
@@ -48,6 +49,7 @@ if st.button("決定"):
             ORDER BY diff_{selected_year} DESC
         '''
         df = pd.read_sql_query(query, conn)
+        column_to_plot = "増減人数"
     elif selected_tab == "増減率":
         previous_year = str(int(selected_year) - 1)
         query = f'''
@@ -63,12 +65,20 @@ if st.button("決定"):
             ORDER BY growth_rate_{selected_year} DESC
         '''
         df = pd.read_sql_query(query, conn)
+        column_to_plot = "増減率"
 
-    # グラフを描画（上位30位のみ表示）
+    # データを数値型に変換してからソート
+    df[column_to_plot] = pd.to_numeric(df[column_to_plot], errors='coerce')
+    sorted_df = df.sort_values(by=column_to_plot, ascending=False)
+
+    # 横棒グラフを描画（上位30位のみ表示、指定された列をプロット）
     st.subheader(f"{selected_tab} - {selected_year}")
-    st.bar_chart(df.set_index("駅名").head(30)[df.columns[-1]])
+    fig = px.bar(sorted_df.head(30), y="駅名", x=column_to_plot, orientation='h', 
+                 labels={column_to_plot: column_to_plot, "駅名": "駅名"},
+                 title=f"{selected_tab} - {selected_year}")
+    st.plotly_chart(fig)
 
-    # 表を表示（インデックスを除外）
+    # 表を表示（すべてのレコードを表示、インデックス列を除外）
     df_reset = df.reset_index(drop=True)
     st.dataframe(df_reset)
 
