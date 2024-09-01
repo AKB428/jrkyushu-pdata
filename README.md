@@ -5,8 +5,11 @@
 https://www.jrkyushu.co.jp/company/info/data/station.html
 
 ## 必要なライブラリ
-pip install pdfplumber pandas
 
+```
+pip install pdfplumber pandas
+pip install streamlit pandas matplotlib sqlite3
+```
 
 ## 準備
 
