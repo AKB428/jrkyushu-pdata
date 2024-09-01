@@ -7,7 +7,7 @@ import plotly.express as px
 conn = sqlite3.connect('train_data.db')
 
 # Streamlitアプリの設定
-st.title("JR九州乗客人数-可視化")
+st.title("JR九州1日平均乗客人数-可視化")
 
 # タブの選択肢
 tabs = ["乗客人数", "増減人数", "増減率"]
@@ -77,14 +77,19 @@ if st.button("決定"):
                  labels={column_to_plot: column_to_plot, "駅名": "駅名"},
                  title=f"{selected_tab} - {selected_year}")
 
-    # Y軸（駅名）を反転
-    fig.update_layout(yaxis=dict(categoryorder='total ascending'))
+    # Y軸（駅名）を反転し、グラフの高さを設定
+    fig.update_layout(yaxis=dict(categoryorder='total ascending'), height=800)  # 高さを800pxに設定
 
     st.plotly_chart(fig)
 
     # 表を表示（すべてのレコードを表示、インデックス列を除外）
     df_reset = df.reset_index(drop=True)
     st.dataframe(df_reset)
+
+# フッターにリンクを追加
+st.markdown("---")
+st.markdown("データ元: [JR九州](https://www.jrkyushu.co.jp/company/info/data/station.html)")
+st.markdown("ソースコード: [GitHub](https://github.com/AKB428/jrkyushu-pdata)")
 
 # データベースの接続を閉じる
 conn.close()
