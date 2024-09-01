@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 conn = sqlite3.connect('train_data.db')
 
 # Streamlitアプリの設定
-st.title("JR乗客人数データ可視化")
+st.title("JR九州乗客人数-可視化")
 
 # タブの選択肢
 tabs = ["乗客人数", "増減人数", "増減率"]
@@ -68,8 +68,9 @@ if st.button("決定"):
     st.subheader(f"{selected_tab} - {selected_year}")
     st.bar_chart(df.set_index("駅名").head(30)[df.columns[-1]])
 
-    # 表を表示（すべてのレコードを表示）
-    st.dataframe(df)
+    # 表を表示（インデックスを除外）
+    df_reset = df.reset_index(drop=True)
+    st.dataframe(df_reset)
 
 # データベースの接続を閉じる
 conn.close()
