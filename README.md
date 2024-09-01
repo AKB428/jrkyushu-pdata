@@ -31,3 +31,15 @@ python3 mainPdf2csv.py ./pass-data/2019ekibetsu.pdf
 ```
 python3 mainCsvToSqlite.py ./output_csv/
 ```
+
+## Step3 差分テーブルの算出と登録
+
+```
+python3 calculate_ridership_difference.py
+```
+
+## Step4 増減率テーブルの算出と登録
+
+```
+python3 calculate_ridership_growth_rate.py
+```
