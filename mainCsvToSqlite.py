@@ -123,6 +123,72 @@ def process_csv_files_for_ridership(folder_path, conn):
     
     conn.commit()
 
+def create_ranking_table(conn):
+    cursor = conn.cursor()
+
+    # ランキングテーブルの作成
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ranking (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            station_id INTEGER NOT NULL,
+            station_name TEXT NOT NULL,
+            rank_2023 INTEGER,
+            rank_2022 INTEGER,
+            rank_2021 INTEGER,
+            rank_2020 INTEGER,
+            rank_2019 INTEGER,
+            UNIQUE(station_id),
+            FOREIGN KEY(station_id) REFERENCES station_master(id)
+        )
+    ''')
+    
+    conn.commit()
+
+def process_csv_files_for_ranking(folder_path, conn):
+    cursor = conn.cursor()
+    ranking_data = defaultdict(lambda: {'rank_2023': None, 'rank_2022': None, 'rank_2021': None, 'rank_2020': None, 'rank_2019': None})
+
+    # CSVファイルを最新の年度から処理するためにソート
+    csv_files = sorted(
+        [f for f in os.listdir(folder_path) if f.startswith('reorganized_') and f.endswith('.csv')],
+        key=lambda x: int(x[len('reorganized_'):len('reorganized_')+4]),
+        reverse=True
+    )
+    
+    for file_name in csv_files:
+        year = file_name[len('reorganized_'):len('reorganized_')+4]
+        csv_path = os.path.join(folder_path, file_name)
+        
+        with open(csv_path, 'r', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            header = next(reader)  # ヘッダーをスキップ
+            for row in reader:
+                rank, station_name, line_name = row[0], row[1], row[2]  # ランキング、駅名、線名の列を取得
+                station_key = station_name  # 駅名をキーとする
+
+                # 駅IDを取得（駅名だけで選択）
+                cursor.execute('''
+                    SELECT id FROM station_master WHERE station_name = ?
+                ''', (station_name,))
+                station_id = cursor.fetchone()[0]
+
+                # ランキングデータを更新
+                ranking_data[station_key][f'rank_{year}'] = int(rank) if rank else None
+
+                # データを挿入または更新
+                cursor.execute('''
+                    INSERT INTO ranking (station_id, station_name, rank_2023, rank_2022, rank_2021, rank_2020, rank_2019)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(station_id) DO UPDATE SET
+                        rank_2023 = COALESCE(EXCLUDED.rank_2023, rank_2023),
+                        rank_2022 = COALESCE(EXCLUDED.rank_2022, rank_2022),
+                        rank_2021 = COALESCE(EXCLUDED.rank_2021, rank_2021),
+                        rank_2020 = COALESCE(EXCLUDED.rank_2020, rank_2020),
+                        rank_2019 = COALESCE(EXCLUDED.rank_2019, rank_2019)
+                ''', (station_id, station_name, ranking_data[station_key]['rank_2023'], ranking_data[station_key]['rank_2022'], ranking_data[station_key]['rank_2021'], ranking_data[station_key]['rank_2020'], ranking_data[station_key]['rank_2019']))
+    
+    conn.commit()
+
 def main(folder_path):
     # SQLiteデータベースの接続を確立
     conn = sqlite3.connect('train_data.db')
@@ -141,6 +207,12 @@ def main(folder_path):
 
     # 最新の年度から順にCSVファイルを処理して乗車人数データを挿入
     process_csv_files_for_ridership(folder_path, conn)
+    
+    # ranking テーブルの作成
+    create_ranking_table(conn)
+
+    # 最新の年度から順にCSVファイルを処理してランキングデータを挿入
+    process_csv_files_for_ranking(folder_path, conn)
     
     conn.close()
     print("Station master and ridership data successfully inserted into the SQLite database.")
