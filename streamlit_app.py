@@ -76,6 +76,10 @@ if st.button("決定"):
     fig = px.bar(sorted_df.head(30), y="駅名", x=column_to_plot, orientation='h', 
                  labels={column_to_plot: column_to_plot, "駅名": "駅名"},
                  title=f"{selected_tab} - {selected_year}")
+
+    # Y軸（駅名）を反転
+    fig.update_layout(yaxis=dict(categoryorder='total ascending'))
+
     st.plotly_chart(fig)
 
     # 表を表示（すべてのレコードを表示、インデックス列を除外）
